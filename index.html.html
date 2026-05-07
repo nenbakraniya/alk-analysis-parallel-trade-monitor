@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALK Europe — Parallel Trade Risk Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0D1117;
+    --surface: #161B22;
+    --surface2: #1C2330;
+    --border: #30363D;
+    --alk-blue: #1A6FD4;
+    --alk-blue-light: #4D94E8;
+    --accent-green: #2EA84A;
+    --accent-amber: #D4922A;
+    --accent-red: #D4422A;
+    --text-primary: #E6EDF3;
+    --text-secondary: #8B949E;
+    --text-muted: #6E7681;
+    --risk-low: #2EA84A;
+    --risk-medium: #D4922A;
+    --risk-high: #D4422A;
+    --risk-critical: #B02020;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 16px; }
+
+  .alk-logo {
+    width: 36px; height: 36px;
+    background: var(--alk-blue);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: white;
+    font-weight: 400;
+  }
+
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--text-primary);
+    font-weight: 400;
+  }
+
+  .header-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .meta-item {
+    text-align: right;
+  }
+
+  .meta-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .meta-value {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 40px;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--text-primary);
+    font-weight: 400;
+    margin-bottom: 6px;
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    max-width: 700px;
+    line-height: 1.7;
+  }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .kpi-card:hover { border-color: var(--alk-blue); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .kpi-card.blue::before { background: var(--alk-blue); }
+  .kpi-card.green::before { background: var(--accent-green); }
+  .kpi-card.amber::before { background: var(--accent-amber); }
+  .kpi-card.red::before { background: var(--accent-red); }
+
+  .kpi-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* ── RISK FRAMEWORK BOX ── */
+  .framework-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--alk-blue);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+  }
+
+  .framework-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+
+  .framework-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .framework-item {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .framework-item-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--alk-blue-light);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .framework-item-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  /* ── PANEL ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .panel-body {
+    padding: 20px;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+
+  .btn:hover { border-color: var(--alk-blue); color: var(--alk-blue-light); }
+  .btn.active { background: var(--alk-blue); border-color: var(--alk-blue); color: white; }
+
+  /* ── COUNTRY TABLE ── */
+  .country-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .country-table th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .country-table th:hover { color: var(--alk-blue-light); }
+
+  .country-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    font-size: 13px;
+    vertical-align: middle;
+  }
+
+  .country-table tr:last-child td { border-bottom: none; }
+
+  .country-table tbody tr {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .country-table tbody tr:hover { background: var(--surface2); }
+  .country-table tbody tr.selected { background: rgba(26,111,212,0.12); }
+
+  .flag {
+    font-size: 18px;
+    margin-right: 8px;
+  }
+
+  .country-name {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* ── RISK BADGE ── */
+  .risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .risk-badge.low { background: rgba(46,168,74,0.15); color: var(--risk-low); }
+  .risk-badge.medium { background: rgba(212,146,42,0.15); color: var(--risk-medium); }
+  .risk-badge.high { background: rgba(212,66,42,0.15); color: var(--risk-high); }
+  .risk-badge.critical { background: rgba(176,32,32,0.2); color: #E05555; }
+
+  .risk-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .risk-dot.low { background: var(--risk-low); }
+  .risk-dot.medium { background: var(--risk-medium); }
+  .risk-dot.high { background: var(--risk-high); }
+  .risk-dot.critical { background: #E05555; }
+
+  /* ── SCORE BAR ── */
+  .score-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .score-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .score-num {
+    font-size: 12px;
+    font-weight: 600;
+    width: 28px;
+    text-align: right;
+    color: var(--text-secondary);
+  }
+
+  /* ── DETAIL PANEL ── */
+  .detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .detail-empty-icon {
+    font-size: 32px;
+    opacity: 0.4;
+  }
+
+  .detail-content { display: none; }
+  .detail-content.visible { display: block; }
+
+  .detail-country-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-flag { font-size: 36px; }
+
+  .detail-country-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--text-primary);
+  }
+
+  .detail-role {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .detail-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .detail-metric {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+
+  .detail-metric-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .detail-metric-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .detail-metric-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .detail-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .factor-list { margin-bottom: 18px; }
+
+  .factor-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .factor-item:last-child { border-bottom: none; }
+
+  .factor-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  .recommendation-box {
+    background: rgba(26,111,212,0.08);
+    border: 1px solid rgba(26,111,212,0.25);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .rec-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--alk-blue-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .rec-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ── BOTTOM GRID ── */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  /* ── CHART CONTAINER ── */
+  .chart-wrap {
+    position: relative;
+    height: 240px;
+  }
+
+  /* ── FORECAST SECTION ── */
+  .forecast-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .select-control {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 6px 10px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .select-control:focus { border-color: var(--alk-blue); }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-left {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .footer-right {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .author-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .author-dot {
+    width: 8px; height: 8px;
+    background: var(--alk-blue);
+    border-radius: 50%;
+  }
+
+  /* ── TOOLTIP ── */
+  .tooltip {
+    position: fixed;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 999;
+    display: none;
+    max-width: 220px;
+    line-height: 1.5;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  .sort-arrow { margin-left: 4px; opacity: 0.4; font-size: 10px; }
+  .sort-arrow.active { opacity: 1; color: var(--alk-blue-light); }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .tab:hover { color: var(--text-secondary); }
+  .tab.active { color: var(--alk-blue-light); border-bottom-color: var(--alk-blue); }
+
+  /* ── METHODOLOGY NOTE ── */
+  .method-note {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  .method-note strong { color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="alk-logo">A</div>
+    <div>
+      <div class="header-title">Parallel Trade Risk Monitor — Europe</div>
+      <div class="header-subtitle">Analytical Framework for Ex-Factory Sales Integrity · ALK Allergy+</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="meta-item">
+      <div class="meta-label">Prepared by</div>
+      <div class="meta-value">Nen Bakraniya</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Reference Period</div>
+      <div class="meta-value">2024–2026</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Markets Covered</div>
+      <div class="meta-value">14 European</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+  <!-- KPI STRIP -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">EU Parallel Trade Market</div>
+      <div class="kpi-value">€6–7B</div>
+      <div class="kpi-sub">Annual value, ~2–3% of EU pharma market</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Max Price Differential</div>
+      <div class="kpi-value">300%</div>
+      <div class="kpi-sub">Cross-country spread within EEA</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">High-Risk Markets</div>
+      <div class="kpi-value">4</div>
+      <div class="kpi-sub">Germany, Denmark, Netherlands, Sweden</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">ALK Revenue from Europe</div>
+      <div class="kpi-value">67%</div>
+      <div class="kpi-sub">Primary growth region under Allergy+</div>
+    </div>
+  </div>
+
+  <!-- FRAMEWORK BOX -->
+  <div class="framework-box">
+    <div class="framework-title">The Proposition: A Parallel Trade Risk Scoring Model for ALK's European Supply Integrity</div>
+    <div class="section-desc">
+      As ALK executes Allergy+ and completes paediatric approvals across all five major respiratory allergy tablets in 17+ European countries, 
+      each market imports and exports at different volumes under the supply integrity policy. Price differentials between low-price exporting 
+      markets (Eastern/Southern Europe) and high-price importing markets (Nordic, Germany, Netherlands) create predictable arbitrage incentives. 
+      This framework proposes a structured risk scoring model that could be operationalised as part of the Business Analyst function — 
+      enabling proactive monitoring rather than reactive compliance.
+    </div>
+    <div class="framework-grid">
+      <div class="framework-item">
+        <div class="framework-item-title">Dimension 1 — Price Arbitrage Index</div>
+        <div class="framework-item-desc">Relative price differential between each country and the EU median. Countries with 30%+ below median are exporter risk; 20%+ above median are importer risk.</div>
+      </div>
+      <div class="framework-item">
+        <div class="framework-item-title">Dimension 2 — Parallel Trade Penetration</div>
+        <div class="framework-item-desc">Historical parallel import market share (Germany 8.5%, Denmark 25%+ in peak periods) used as a structural risk multiplier in the composite score.</div>
+      </div>
+      <div class="framework-item">
+        <div class="framework-item-title">Dimension 3 — Regulatory Permissiveness</div>
+        <div class="framework-item-desc">Pharmacy margin regulation and national licensing activity. Countries with unregulated retail margins show higher parallel trade penetration per academic research.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION HEADER -->
+  <div class="section-header">
+    <div class="section-title">Country-Level Risk Assessment</div>
+    <div class="section-desc">
+      Click any country row to view detailed risk breakdown. Sort columns by clicking headers. 
+      Filter by role (importer / exporter) or risk level using the controls below.
+    </div>
+  </div>
+
+  <!-- FILTER CONTROLS -->
+  <div class="controls" style="margin-bottom:16px;">
+    <button class="btn active" onclick="filterTable('all', this)">All Markets</button>
+    <button class="btn" onclick="filterTable('importer', this)">Importers</button>
+    <button class="btn" onclick="filterTable('exporter', this)">Exporters</button>
+    <button class="btn" onclick="filterTable('critical', this)">Critical Risk</button>
+    <button class="btn" onclick="filterTable('high', this)">High Risk</button>
+    <button class="btn" onclick="filterTable('medium', this)">Medium Risk</button>
+    <button class="btn" onclick="filterTable('low', this)">Low Risk</button>
+  </div>
+
+  <!-- MAIN GRID: TABLE + DETAIL -->
+  <div class="main-grid">
+    <!-- TABLE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">European Market Parallel Trade Risk Index</div>
+        <div style="font-size:11px;color:var(--text-muted);">Click row for detail →</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="country-table" id="countryTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)">Country <span class="sort-arrow" id="arr0">↕</span></th>
+              <th onclick="sortTable(1)">Role <span class="sort-arrow" id="arr1">↕</span></th>
+              <th onclick="sortTable(2)">Price Index <span class="sort-arrow" id="arr2">↕</span></th>
+              <th onclick="sortTable(3)">PT Penetration <span class="sort-arrow" id="arr3">↕</span></th>
+              <th onclick="sortTable(4)">Risk Score <span class="sort-arrow" id="arr4">↕</span></th>
+              <th onclick="sortTable(5)">Risk Level <span class="sort-arrow" id="arr5">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Country Detail</div>
+        <div style="font-size:11px;color:var(--text-muted);">Select a market</div>
+      </div>
+      <div class="panel-body" id="detailPanel">
+        <div class="detail-empty">
+          <div class="detail-empty-icon">🗺</div>
+          <div>Select a country from the table<br>to view detailed risk analysis</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM GRID: CHARTS -->
+  <div class="bottom-grid">
+    <!-- RISK DISTRIBUTION -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Risk Score Distribution by Country</div>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICE INDEX vs RISK -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Price Differential vs Risk Score</div>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="scatterChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORECAST SECTION -->
+  <div class="panel" style="margin-bottom:24px;">
+    <div class="panel-header">
+      <div class="panel-title">Revenue at Risk — Parallel Trade Impact Forecast</div>
+      <div class="forecast-controls">
+        <select class="select-control" id="scenarioSelect" onchange="updateForecast()">
+          <option value="base">Base Scenario (current controls)</option>
+          <option value="adverse">Adverse Scenario (PT +20%)</option>
+          <option value="optimistic">Optimistic (enhanced monitoring)</option>
+        </select>
+        <select class="select-control" id="marketSelect" onchange="updateForecast()">
+          <option value="all">All High-Risk Markets</option>
+          <option value="de">Germany only</option>
+          <option value="dk">Denmark only</option>
+          <option value="nl">Netherlands only</option>
+          <option value="se">Sweden only</option>
+        </select>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="method-note">
+        <strong>Methodology note:</strong> Revenue at risk is modelled as the estimated share of ex-factory sales volumes in high-risk markets 
+        that could be diverted through parallel trade channels. Based on published parallel trade penetration rates (Germany 8.5%, Denmark ~15%, 
+        Netherlands ~10%, Sweden ~12%) applied to ALK's European revenue base (67% of ~€953M trailing twelve months). 
+        Figures are directional estimates for analytical purposes, not financial forecasts.
+      </div>
+      <div class="chart-wrap" style="height:260px;">
+        <canvas id="forecastChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- METHODOLOGY + TABS -->
+  <div class="panel" style="margin-bottom:24px;">
+    <div class="panel-header">
+      <div class="panel-title">Proposed Implementation for Business Analyst Function</div>
+    </div>
+    <div class="panel-body">
+      <div class="tab-bar">
+        <div class="tab active" onclick="showTab('model', this)">Scoring Model</div>
+        <div class="tab" onclick="showTab('workflow', this)">Monitoring Workflow</div>
+        <div class="tab" onclick="showTab('tools', this)">Tools & Automation</div>
+      </div>
+
+      <div id="tab-model" class="tab-content">
+        <div class="method-note">
+          The composite risk score (0–100) is calculated as a weighted average of three dimensions:<br><br>
+          <strong>Risk Score = (Price Arbitrage Index × 0.45) + (PT Penetration Rate × 0.35) + (Regulatory Permissiveness × 0.20)</strong><br><br>
+          Where Price Arbitrage Index = |Country Price – EU Median| / EU Median × 100, capped at 100.<br>
+          PT Penetration Rate is sourced from academic literature (Dubois & Saethre 2020; Kanavos et al. 2004) and national health authority reports.<br>
+          Regulatory Permissiveness scores pharmacy margin regulation aggressiveness per country.
+        </div>
+        <div class="framework-grid">
+          <div class="framework-item">
+            <div class="framework-item-title">Score 0–30 · Low Risk</div>
+            <div class="framework-item-desc">Monitor quarterly. Standard compliance checks. No supply volume restriction required.</div>
+          </div>
+          <div class="framework-item">
+            <div class="framework-item-title">Score 31–60 · Medium Risk</div>
+            <div class="framework-item-desc">Monitor monthly. Flag variance in ex-factory volumes against in-market demand. Review import licence activity.</div>
+          </div>
+          <div class="framework-item">
+            <div class="framework-item-title">Score 61–100 · High / Critical</div>
+            <div class="framework-item-desc">Weekly monitoring. Align corrections between importing and exporting markets. Escalate to supply integrity policy review if variance exceeds threshold.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-workflow" class="tab-content" style="display:none;">
+        <div class="method-note">
+          A structured weekly workflow for the Business Analyst, directly mapped to the role responsibilities:
+        </div>
+        <div class="framework-grid">
+          <div class="framework-item">
+            <div class="framework-item-title">Step 1 — Data Collection (Monday)</div>
+            <div class="framework-item-desc">Pull ex-factory sales by market from ERP. Pull in-market demand data. Identify volume variance per country pair. Flag any anomalies against prior week baseline.</div>
+          </div>
+          <div class="framework-item">
+            <div class="framework-item-title">Step 2 — Risk Scoring (Tuesday)</div>
+            <div class="framework-item-desc">Update composite scores for high-risk markets. Calculate arbitrage index from current price differential data. Run compliance check against supply integrity policy thresholds.</div>
+          </div>
+          <div class="framework-item">
+            <div class="framework-item-title">Step 3 — Reporting (Wednesday)</div>
+            <div class="framework-item-desc">Prepare management reporting with variance commentary. Highlight markets requiring correction alignment. Distribute to regional finance and supply chain stakeholders.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-tools" class="tab-content" style="display:none;">
+        <div class="method-note">
+          Proposed tooling stack using skills directly evidenced in my application profile:
+        </div>
+        <div class="framework-grid">
+          <div class="framework-item">
+            <div class="framework-item-title">Data Layer — SQL + Python</div>
+            <div class="framework-item-desc">Automated ingestion of ex-factory and in-market sales data from ERP/SAP. Python scripts for scoring model calculation and variance detection. Scheduled to run weekly without manual intervention.</div>
+          </div>
+          <div class="framework-item">
+            <div class="framework-item-title">Reporting Layer — Power BI / Excel</div>
+            <div class="framework-item-desc">Interactive dashboard (similar to this prototype) tracking risk scores, volume variances and compliance status by market. Management reporting templates in Excel with variance commentary auto-populated.</div>
+          </div>
+          <div class="framework-item">
+            <div class="framework-item-title">Automation Layer — N8N + LLM</div>
+            <div class="framework-item-desc">Automated alert workflow: when a market crosses a risk threshold, a notification with pre-drafted commentary is generated and routed to the relevant stakeholder. Reduces analyst turnaround time on routine escalations.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-left">
+    Data sources: CEPR (Dubois & Saethre 2020), CEP EU (2021), PharmaFootpath (2026), ALK Annual Reports 2024–2025, EMA.<br>
+    This analysis uses publicly available data and published research. It is prepared as an analytical exercise, not an internal ALK document.
+  </div>
+  <div class="footer-right">
+    <div class="author-tag">
+      <div class="author-dot"></div>
+      Prepared by Nen Bakraniya · Candidate, Business Analyst Finance & Supply Chain · ALK Hamburg
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ── DATA ──
+const countries = [
+  {
+    id: 'de', flag: '🇩🇪', name: 'Germany', role: 'importer',
+    priceIndex: 78, ptPenetration: 8.5, regulatoryScore: 72, riskScore: 68,
+    risk: 'high',
+    priceVsMedian: '+28%',
+    keyFacts: [
+      { icon: '⚠️', text: 'Largest PT market in Europe by volume. 8.5% of pharmaceuticals sold via parallel import channels.' },
+      { icon: '📋', text: 'Pharmacy margin unregulated at retail level — high incentive for pharmacists to source parallel imports.' },
+      { icon: '💊', text: 'Key importer of SLIT-tablets from Eastern European markets (Poland, Czech Republic, Hungary).' },
+      { icon: '📈', text: 'ALK Hamburg office directly exposed to in-market demand vs ex-factory volume variance.' }
+    ],
+    recommendation: 'Weekly monitoring required. Track variance between ex-factory volumes shipped to DE and actual in-market dispensing data. Flag if parallel import share exceeds 10% in any quarter — supply integrity policy review threshold.'
+  },
+  {
+    id: 'dk', flag: '🇩🇰', name: 'Denmark', role: 'importer',
+    priceIndex: 92, ptPenetration: 15.0, regulatoryScore: 80, riskScore: 84,
+    risk: 'critical',
+    priceVsMedian: '+42%',
+    keyFacts: [
+      { icon: '🚨', text: 'Highest parallel trade penetration in Europe — historically up to 25% in peak periods.' },
+      { icon: '🏠', text: 'ALK is headquartered in Denmark. Domestic market subject to maximum regulatory scrutiny on supply integrity.' },
+      { icon: '💰', text: 'Price premium of ~42% above EU median creates strong arbitrage incentive from Southern/Eastern Europe.' },
+      { icon: '📋', text: 'Danish Medicines Agency actively tracks parallel import licenses — compliance burden is highest here.' }
+    ],
+    recommendation: 'Critical — weekly ex-factory vs in-market reconciliation required. Coordinate directly with Horsholm HQ on supply integrity policy enforcement. Any correction alignments between DK and exporting markets should be escalated immediately.'
+  },
+  {
+    id: 'nl', flag: '🇳🇱', name: 'Netherlands', role: 'importer',
+    priceIndex: 74, ptPenetration: 10.0, regulatoryScore: 65, riskScore: 62,
+    risk: 'high',
+    priceVsMedian: '+24%',
+    keyFacts: [
+      { icon: '⚠️', text: '~10% parallel import penetration. Established parallel trade infrastructure with multiple licensed wholesalers.' },
+      { icon: '🔗', text: 'Geographic hub for pan-European distribution — high transit parallel trade risk.' },
+      { icon: '📦', text: 'Price referencing to Belgium and Germany creates downward pricing pressure — arbitrage incentive sustained.' }
+    ],
+    recommendation: 'Monthly monitoring with quarterly deep-dive. Track parallel import license activity via CBGMEB (Dutch Medicines Authority). Flag volume variance above 8% against prior quarter baseline.'
+  },
+  {
+    id: 'se', flag: '🇸🇪', name: 'Sweden', role: 'importer',
+    priceIndex: 81, ptPenetration: 12.0, regulatoryScore: 68, riskScore: 72,
+    risk: 'high',
+    priceVsMedian: '+31%',
+    keyFacts: [
+      { icon: '⚠️', text: 'Parallel imports estimated to reduce drug prices by 12–19% in segments with high PT entry (Ganslandt & Maskus 2004).' },
+      { icon: '💊', text: 'SLIT-tablet market growing rapidly post-paediatric approval. Higher volumes = higher parallel trade exposure.' },
+      { icon: '📋', text: 'Dental and Pharmaceutical Benefits Agency (TLV) actively promotes parallel imports to reduce costs.' }
+    ],
+    recommendation: 'Weekly monitoring during post-paediatric approval ramp-up period. Volume spikes in exporting markets (Poland, Czech Republic) should trigger automatic review of Swedish in-market demand data.'
+  },
+  {
+    id: 'pl', flag: '🇵🇱', name: 'Poland', role: 'exporter',
+    priceIndex: 38, ptPenetration: 2.0, regulatoryScore: 30, riskScore: 48,
+    risk: 'medium',
+    priceVsMedian: '-38%',
+    keyFacts: [
+      { icon: '📤', text: 'Major source market for parallel exports to Nordic and Western European countries.' },
+      { icon: '💲', text: 'Price ~38% below EU median — strong incentive for local wholesalers to export.' },
+      { icon: '⚡', text: 'Risk: shortage in domestic market if export volumes exceed sustainable levels.' }
+    ],
+    recommendation: 'Monitor outbound shipment volumes quarterly. If ex-factory volumes to PL exceed domestic demand trajectory by >15%, flag for supply integrity review. Shortage risk is the primary concern here, not import arbitrage.'
+  },
+  {
+    id: 'cz', flag: '🇨🇿', name: 'Czech Republic', role: 'exporter',
+    priceIndex: 42, ptPenetration: 1.5, regulatoryScore: 28, riskScore: 44,
+    risk: 'medium',
+    priceVsMedian: '-34%',
+    keyFacts: [
+      { icon: '📤', text: 'Active parallel export market to Germany and Austria.' },
+      { icon: '💲', text: 'Price ~34% below EU median. Government price controls create stable low-price environment.' },
+      { icon: '⚡', text: 'Growing pharmaceutical export infrastructure — risk expected to increase as AIT market expands.' }
+    ],
+    recommendation: 'Quarterly monitoring. Track parallel export license activity via SÚKL (Czech State Institute for Drug Control). Flag if domestic dispensing data diverges from ex-factory shipments.'
+  },
+  {
+    id: 'hu', flag: '🇭🇺', name: 'Hungary', role: 'exporter',
+    priceIndex: 35, ptPenetration: 1.0, regulatoryScore: 25, riskScore: 38,
+    risk: 'medium',
+    priceVsMedian: '-41%',
+    keyFacts: [
+      { icon: '📤', text: 'Lowest price index in the model — highest arbitrage incentive for parallel exporters.' },
+      { icon: '💲', text: 'OGYÉI (Hungarian regulator) price controls among strictest in EU — prices 41% below median.' },
+      { icon: '⚡', text: 'Emerging parallel export activity, particularly to Austria and Germany.' }
+    ],
+    recommendation: 'Quarterly review. Monitor export license applications via OGYÉI. If new entrants appear in the parallel export market for AIT products, escalate to supply integrity team.'
+  },
+  {
+    id: 'es', flag: '🇪🇸', name: 'Spain', role: 'exporter',
+    priceIndex: 52, ptPenetration: 0.5, regulatoryScore: 22, riskScore: 32,
+    risk: 'medium',
+    priceVsMedian: '-14%',
+    keyFacts: [
+      { icon: '📤', text: 'Moderate exporter — primarily to UK and Germany for SCIT products.' },
+      { icon: '📋', text: 'ALK has manufacturing presence in Spain (Abelló legacy). Complex supply chain visibility.' },
+      { icon: '💲', text: 'Price ~14% below median — moderate arbitrage incentive.' }
+    ],
+    recommendation: 'Biannual review sufficient. Monitor post-Brexit UK import channel as Spain is a primary source for UK parallel imports.'
+  },
+  {
+    id: 'fr', flag: '🇫🇷', name: 'France', role: 'balanced',
+    priceIndex: 58, ptPenetration: 0.3, regulatoryScore: 15, riskScore: 18,
+    risk: 'low',
+    priceVsMedian: '-8%',
+    keyFacts: [
+      { icon: '✅', text: 'Negligible parallel trade — strict national price controls and government procurement centralization.' },
+      { icon: '📋', text: 'ANSM (French medicines authority) actively limits parallel import activity.' },
+      { icon: '💊', text: 'Large market but low parallel trade exposure — net risk is low.' }
+    ],
+    recommendation: 'Annual review sufficient. France represents minimal parallel trade risk for ALK products. Standard compliance monitoring only.'
+  },
+  {
+    id: 'it', flag: '🇮🇹', name: 'Italy', role: 'balanced',
+    priceIndex: 55, ptPenetration: 0.8, regulatoryScore: 20, riskScore: 22,
+    risk: 'low',
+    priceVsMedian: '-10%',
+    keyFacts: [
+      { icon: '✅', text: 'Low parallel trade historically. AIFA (Italian regulator) maintains tight pricing controls.' },
+      { icon: '📈', text: '1,482 parallel trade licenses have been granted, but many are inactive (248 no longer commercialised).' },
+      { icon: '💊', text: 'Growing AIT market — monitor as paediatric approvals drive volume increases.' }
+    ],
+    recommendation: 'Biannual review. Monitor license grant velocity — if PT licenses for AIT products increase quarter-on-quarter, escalate monitoring frequency.'
+  },
+  {
+    id: 'at', flag: '🇦🇹', name: 'Austria', role: 'importer',
+    priceIndex: 66, ptPenetration: 4.0, regulatoryScore: 45, riskScore: 42,
+    risk: 'medium',
+    priceVsMedian: '+16%',
+    keyFacts: [
+      { icon: '⚠️', text: 'Moderate importer, primarily from Czech Republic and Hungary via geographic proximity.' },
+      { icon: '💲', text: 'Price ~16% above median — sufficient to sustain parallel trade activity for high-volume products.' }
+    ],
+    recommendation: 'Monthly monitoring. Geographic border with Czech Republic and Hungary creates direct supply chain exposure. Track corridor-specific parallel trade flows.'
+  },
+  {
+    id: 'be', flag: '🇧🇪', name: 'Belgium', role: 'importer',
+    priceIndex: 70, ptPenetration: 3.5, regulatoryScore: 40, riskScore: 38,
+    risk: 'medium',
+    priceVsMedian: '+20%',
+    keyFacts: [
+      { icon: '⚠️', text: 'Moderate parallel trade penetration. Price referencing to Netherlands creates pricing floor.' },
+      { icon: '🔗', text: 'Transit hub for Western European parallel distribution networks.' }
+    ],
+    recommendation: 'Quarterly monitoring. Track Belgian parallel import license activity. Flag any new licensee appearing in the AIT product category.'
+  },
+  {
+    id: 'ch', flag: '🇨🇭', name: 'Switzerland', role: 'importer',
+    priceIndex: 95, ptPenetration: 5.0, regulatoryScore: 50, riskScore: 58,
+    risk: 'high',
+    priceVsMedian: '+45%',
+    keyFacts: [
+      { icon: '⚠️', text: 'Highest price level outside Nordics. Strong arbitrage incentive despite non-EU status.' },
+      { icon: '📋', text: 'Swissmedic parallel import rules differ from EEA — separate compliance framework required.' },
+      { icon: '💊', text: 'ALK expanding into Swiss market — paediatric approvals pending.' }
+    ],
+    recommendation: 'Monthly monitoring. Non-EEA market requires separate compliance tracking. Coordinate with Swissmedic on parallel import license activity for AIT products.'
+  },
+  {
+    id: 'no', flag: '🇳🇴', name: 'Norway', role: 'importer',
+    priceIndex: 88, ptPenetration: 8.0, regulatoryScore: 60, riskScore: 66,
+    risk: 'high',
+    priceVsMedian: '+38%',
+    keyFacts: [
+      { icon: '⚠️', text: 'High price level and active parallel import market. EEA member — full parallel trade exposure.' },
+      { icon: '💲', text: 'Price ~38% above EU median — one of the strongest arbitrage incentives in Europe.' },
+      { icon: '📋', text: 'Norwegian Medicines Agency (NoMA) tracks parallel import volumes closely.' }
+    ],
+    recommendation: 'Weekly monitoring. Norwegian market presents similar risk profile to Sweden. Coordinate parallel import volume tracking with NoMA data where available.'
+  }
+];
+
+const riskOrder = { low: 1, medium: 2, high: 3, critical: 4 };
+let currentFilter = 'all';
+let currentSort = { col: 4, dir: 'desc' };
+let selectedId = null;
+
+// ── RENDER TABLE ──
+function renderTable() {
+  const body = document.getElementById('tableBody');
+  let data = [...countries];
+
+  if (currentFilter === 'importer') data = data.filter(c => c.role === 'importer');
+  else if (currentFilter === 'exporter') data = data.filter(c => c.role === 'exporter');
+  else if (['low','medium','high','critical'].includes(currentFilter)) data = data.filter(c => c.risk === currentFilter);
+
+  data.sort((a, b) => {
+    let av, bv;
+    if (currentSort.col === 0) { av = a.name; bv = b.name; }
+    else if (currentSort.col === 1) { av = a.role; bv = b.role; }
+    else if (currentSort.col === 2) { av = a.priceIndex; bv = b.priceIndex; }
+    else if (currentSort.col === 3) { av = a.ptPenetration; bv = b.ptPenetration; }
+    else if (currentSort.col === 4) { av = a.riskScore; bv = b.riskScore; }
+    else if (currentSort.col === 5) { av = riskOrder[a.risk]; bv = riskOrder[b.risk]; }
+    if (av < bv) return currentSort.dir === 'asc' ? -1 : 1;
+    if (av > bv) return currentSort.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  body.innerHTML = data.map(c => {
+    const scoreColor = c.risk === 'critical' ? '#E05555' : c.risk === 'high' ? '#D4422A' : c.risk === 'medium' ? '#D4922A' : '#2EA84A';
+    return `
+      <tr onclick="selectCountry('${c.id}')" class="${selectedId === c.id ? 'selected' : ''}">
+        <td><span class="flag">${c.flag}</span><span class="country-name">${c.name}</span></td>
+        <td><span style="font-size:12px;color:var(--text-secondary);text-transform:capitalize;">${c.role}</span></td>
+        <td><span style="font-weight:600;color:${c.priceVsMedian.startsWith('+') ? '#D4422A' : '#2EA84A'};">${c.priceVsMedian}</span></td>
+        <td><span style="color:var(--text-secondary);">${c.ptPenetration}%</span></td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar">
+              <div class="score-bar-fill" style="width:${c.riskScore}%;background:${scoreColor};"></div>
+            </div>
+            <span class="score-num" style="color:${scoreColor};">${c.riskScore}</span>
+          </div>
+        </td>
+        <td><span class="risk-badge ${c.risk}"><span class="risk-dot ${c.risk}"></span>${c.risk}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterTable(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function sortTable(col) {
+  if (currentSort.col === col) {
+    currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSort.col = col;
+    currentSort.dir = 'desc';
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = document.getElementById('arr' + i);
+    a.textContent = '↕';
+    a.classList.remove('active');
+  }
+  const active = document.getElementById('arr' + col);
+  active.textContent = currentSort.dir === 'asc' ? '↑' : '↓';
+  active.classList.add('active');
+  renderTable();
+}
+
+// ── DETAIL PANEL ──
+function selectCountry(id) {
+  selectedId = id;
+  const c = countries.find(x => x.id === id);
+  renderTable();
+
+  const riskColor = c.risk === 'critical' ? '#E05555' : c.risk === 'high' ? '#D4422A' : c.risk === 'medium' ? '#D4922A' : '#2EA84A';
+
+  document.getElementById('detailPanel').innerHTML = `
+    <div class="detail-content visible">
+      <div class="detail-country-header">
+        <div class="detail-flag">${c.flag}</div>
+        <div>
+          <div class="detail-country-name">${c.name}</div>
+          <div class="detail-role">Role: <strong style="text-transform:capitalize;">${c.role}</strong> &nbsp;|&nbsp; 
+          <span class="risk-badge ${c.risk}" style="font-size:10px;padding:2px 8px;">
+            <span class="risk-dot ${c.risk}"></span>${c.risk} risk
+          </span></div>
+        </div>
+      </div>
+      <div class="detail-metrics">
+        <div class="detail-metric">
+          <div class="detail-metric-label">Risk Score</div>
+          <div class="detail-metric-value" style="color:${riskColor};">${c.riskScore}/100</div>
+          <div class="detail-metric-sub">Composite index</div>
+        </div>
+        <div class="detail-metric">
+          <div class="detail-metric-label">Price vs EU Median</div>
+          <div class="detail-metric-value" style="color:${c.priceVsMedian.startsWith('+') ? '#D4422A' : '#2EA84A'};">${c.priceVsMedian}</div>
+          <div class="detail-metric-sub">Arbitrage differential</div>
+        </div>
+        <div class="detail-metric">
+          <div class="detail-metric-label">PT Penetration</div>
+          <div class="detail-metric-value">${c.ptPenetration}%</div>
+          <div class="detail-metric-sub">Est. market share</div>
+        </div>
+        <div class="detail-metric">
+          <div class="detail-metric-label">Price Index</div>
+          <div class="detail-metric-value">${c.priceIndex}</div>
+          <div class="detail-metric-sub">vs EU base 100</div>
+        </div>
+      </div>
+      <div class="detail-section-title">Risk Factors</div>
+      <div class="factor-list">
+        ${c.keyFacts.map(f => `<div class="factor-item"><span class="factor-icon">${f.icon}</span><span>${f.text}</span></div>`).join('')}
+      </div>
+      <div class="detail-section-title">Monitoring Recommendation</div>
+      <div class="recommendation-box">
+        <div class="rec-title">Business Analyst Action</div>
+        <div class="rec-text">${c.recommendation}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── BAR CHART ──
+function buildBarChart() {
+  const sorted = [...countries].sort((a,b) => b.riskScore - a.riskScore);
+  const ctx = document.getElementById('barChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(c => c.flag + ' ' + c.name),
+      datasets: [{
+        label: 'Risk Score',
+        data: sorted.map(c => c.riskScore),
+        backgroundColor: sorted.map(c =>
+          c.risk === 'critical' ? 'rgba(224,85,85,0.8)' :
+          c.risk === 'high' ? 'rgba(212,66,42,0.7)' :
+          c.risk === 'medium' ? 'rgba(212,146,42,0.7)' :
+          'rgba(46,168,74,0.7)'
+        ),
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1C2330',
+          borderColor: '#30363D',
+          borderWidth: 1,
+          titleColor: '#E6EDF3',
+          bodyColor: '#8B949E',
+          callbacks: {
+            label: ctx => `Risk Score: ${ctx.parsed.y}/100`,
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#6E7681', font: { size: 10 }, maxRotation: 45 },
+          grid: { color: 'rgba(48,54,61,0.5)' }
+        },
+        y: {
+          ticks: { color: '#6E7681', font: { size: 10 } },
+          grid: { color: 'rgba(48,54,61,0.5)' },
+          max: 100
+        }
+      }
+    }
+  });
+}
+
+// ── SCATTER CHART ──
+function buildScatterChart() {
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Countries',
+        data: countries.map(c => ({ x: c.priceIndex - 65, y: c.riskScore, label: c.flag + c.name })),
+        backgroundColor: countries.map(c =>
+          c.risk === 'critical' ? 'rgba(224,85,85,0.85)' :
+          c.risk === 'high' ? 'rgba(212,66,42,0.85)' :
+          c.risk === 'medium' ? 'rgba(212,146,42,0.85)' :
+          'rgba(46,168,74,0.85)'
+        ),
+        pointRadius: 8,
+        pointHoverRadius: 10,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1C2330',
+          borderColor: '#30363D',
+          borderWidth: 1,
+          titleColor: '#E6EDF3',
+          bodyColor: '#8B949E',
+          callbacks: {
+            label: ctx => {
+              const c = countries[ctx.dataIndex];
+              return [`${c.flag} ${c.name}`, `Price vs median: ${c.priceVsMedian}`, `Risk: ${c.riskScore}/100`];
+            },
+            title: () => ''
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Price Index vs EU Median (base 65)', color: '#6E7681', font: { size: 11 } },
+          ticks: { color: '#6E7681', font: { size: 10 } },
+          grid: { color: 'rgba(48,54,61,0.5)' }
+        },
+        y: {
+          title: { display: true, text: 'Composite Risk Score', color: '#6E7681', font: { size: 11 } },
+          ticks: { color: '#6E7681', font: { size: 10 } },
+          grid: { color: 'rgba(48,54,61,0.5)' },
+          max: 100
+        }
+      }
+    }
+  });
+}
+
+// ── FORECAST CHART ──
+let forecastChart = null;
+
+function getForecastData(scenario, market) {
+  const quarters = ['Q3 24', 'Q4 24', 'Q1 25', 'Q2 25', 'Q3 25', 'Q4 25', 'Q1 26', 'Q2 26'];
+
+  const baseRates = {
+    all: [38, 41, 44, 43, 47, 50, 52, 55],
+    de: [12, 13, 14, 14, 15, 16, 17, 18],
+    dk: [8, 9, 9, 10, 11, 11, 12, 13],
+    nl: [6, 7, 7, 7, 8, 8, 9, 9],
+    se: [7, 7, 8, 8, 9, 9, 10, 10],
+  };
+
+  const base = baseRates[market];
+
+  let data;
+  if (scenario === 'base') {
+    data = base;
+  } else if (scenario === 'adverse') {
+    data = base.map(v => Math.round(v * 1.2));
+  } else {
+    data = base.map((v, i) => Math.max(5, Math.round(v * (1 - i * 0.03))));
+  }
+
+  return { quarters, data };
+}
+
+function updateForecast() {
+  const scenario = document.getElementById('scenarioSelect').value;
+  const market = document.getElementById('marketSelect').value;
+  const { quarters, data } = getForecastData(scenario, market);
+
+  const color = scenario === 'adverse' ? 'rgba(212,66,42,0.8)' :
+                scenario === 'optimistic' ? 'rgba(46,168,74,0.8)' :
+                'rgba(26,111,212,0.8)';
+
+  const colorBg = scenario === 'adverse' ? 'rgba(212,66,42,0.15)' :
+                  scenario === 'optimistic' ? 'rgba(46,168,74,0.15)' :
+                  'rgba(26,111,212,0.15)';
+
+  if (forecastChart) {
+    forecastChart.data.labels = quarters;
+    forecastChart.data.datasets[0].data = data;
+    forecastChart.data.datasets[0].borderColor = color;
+    forecastChart.data.datasets[0].backgroundColor = colorBg;
+    forecastChart.data.datasets[0].pointBackgroundColor = color;
+    forecastChart.update();
+  }
+}
+
+function buildForecastChart() {
+  const { quarters, data } = getForecastData('base', 'all');
+  const ctx = document.getElementById('forecastChart').getContext('2d');
+  forecastChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: quarters,
+      datasets: [{
+        label: 'Revenue at Risk (€M)',
+        data: data,
+        borderColor: 'rgba(26,111,212,0.8)',
+        backgroundColor: 'rgba(26,111,212,0.15)',
+        pointBackgroundColor: 'rgba(26,111,212,0.8)',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1C2330',
+          borderColor: '#30363D',
+          borderWidth: 1,
+          titleColor: '#E6EDF3',
+          bodyColor: '#8B949E',
+          callbacks: {
+            label: ctx => `Est. revenue at risk: €${ctx.parsed.y}M`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#6E7681', font: { size: 11 } },
+          grid: { color: 'rgba(48,54,61,0.5)' }
+        },
+        y: {
+          title: { display: true, text: 'EUR Million (estimated)', color: '#6E7681', font: { size: 11 } },
+          ticks: { color: '#6E7681', font: { size: 11 }, callback: v => '€' + v + 'M' },
+          grid: { color: 'rgba(48,54,61,0.5)' }
+        }
+      }
+    }
+  });
+}
+
+// ── TABS ──
+function showTab(id, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).style.display = 'block';
+  el.classList.add('active');
+}
+
+// ── INIT ──
+renderTable();
+buildBarChart();
+buildScatterChart();
+buildForecastChart();
+</script>
+</body>
+</html>
